@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-stateful
+spec:
+  serviceName: test-stateful
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-stateful
+  template:
+    metadata:
+      labels:
+        app: test-stateful
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

@@ -1,0 +1,35 @@
+apiVersion: scheduling.k8s.io/v1
+kind: CronJob
+metadata:
+  name: prod-chaos-schedule
+spec:
+  schedule: "0 22 * * 6"  # Saturday at 10 PM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: litmus-admin
+          containers:
+          - name: chaos-runner
+            image: litmuschaos/chaos-runner:latest
+            env:
+              - name: CHAOS_INTERVAL
+                value: "30"
+              - name: TOTAL_CHAOS_DURATION
+                value: "300"
+              - name: TARGET_CONTAINER
+                value: "production-app"
+              - name: CHAOS_KILL_COMMAND
+                value: "SIGTERM"
+            resources:
+              limits:
+                cpu: 200m
+                memory: 256Mi
+              requests:
+                cpu: 100m
+                memory: 128Mi
+          restartPolicy: Never

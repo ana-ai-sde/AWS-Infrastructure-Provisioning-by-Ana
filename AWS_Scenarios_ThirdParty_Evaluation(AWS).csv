@@ -1,0 +1,144 @@
+Id,Complexity,Sceanrio,Objective,Scope,Expected Deliverables,Pass Criteria,Completeness,Accuracy,Productivity
+1,Simple,Static Website Deployment on AWS S3 + CloudFront,Test Ana’s ability to provision a simple public-facing service.,"S3 bucket with static website hosting
+
+CloudFront distribution with caching and SSL
+
+Route 53 DNS setup (optional)","Clean Terraform code (remote backend, variables, outputs)
+
+CI/CD pipeline (optional) for deployment","Public URL serves the static site
+
+IaC is modular, repeatable, and version-controlled",4.5,4.6,5
+2,Simple,EC2 with Monitoring and SSH Control,Validate secure compute provisioning with basic monitoring,"- EC2 instance
+- Security Group with IP-based SSH
+- CloudWatch agent
+- Alarms + Dashboard","- Terraform/CDK code
+- Configured metrics + alarms
+- IAM role for EC2","- SSH restricted by CIDR
+- CPU/memory metrics visible
+- Alarm fires on CPU > 80%",4,3.5,5
+3,Simple, Basic VPC with Subnets and NAT Gateway,Assess network provisioning skills with routing,"- VPC with CIDR
+- 2 public + 2 private subnets
+- NAT GW, IGW, routing","- Terraform/CDK IaC
+- Modular structure
+- Network diagram or notes","- Outbound internet from private subnet
+- Clean, modular code
+- Routing tables correctly assigned",5,4.6,5
+4,Simple, CloudWatch Uptime Monitoring for Public URL,Test monitoring setup without infra provisioning,"- External URL (e.g., example.com)
+- CloudWatch Synthetics or Health Checks
+- SNS notifications","- Terraform or console setup script
+- Alert + notification wiring","- Alert fires on HTTP failure
+- Notification received (e.g., email or Slack)",4,4.1,5
+5,Simple, Lambda Function with Scheduled Trigger,Validate basic serverless deployment with event triggers,"- Lambda function (Python/Node.js)
+- Scheduled EventBridge rule
+- IAM role for execution","- IaC + function code
+- CloudWatch logging enabled","- Lambda runs every 10 mins
+- Logs appear in CloudWatch
+- IAM role is least-privileged",5,5,5
+6,Medium, Highly Available Web App on AWS,"Test Ana’s ability to deploy a resilient, multi-tier application","- VPC with public/private subnets
+- ALB + EC2 ASG
+- RDS (Multi-AZ)
+- IAM roles, SSM, CloudWatch","- Modular Terraform/CDK
+- Monitoring + alerting setup
+- Auto-scaling config
+- Security group hardening","- Infra provisioned with no drift
+- CPU/memory/disk alarms in place
+- Instance auto-recovery tested",3.7,3.5,4
+7,Medium, Centralized Logging & Monitoring Setup,Validate Ana’s observability setup across multiple services,"- CloudWatch Logs + Metrics
+- Custom metrics (e.g., disk I/O)
+- Log aggregation via CloudWatch Insights or ELK","- Logging agent deployment
+- Unified dashboard
+- Anomaly detection rules","- Dashboards show relevant app + infra metrics
+- Logs are searchable by tags or time
+- Alerts triggered on anomalies",4.8,4.8,5
+8,Medium, Azure VM Scale Set with Load Balancer,Test scalable compute provisioning on Azure,"- Virtual Network + NSGs
+- VM Scale Set with load balancer
+- Diagnostic logging + Azure Monitor","- Bicep or Terraform modules
+- Scale policy definitions
+- Alerts for CPU + instance failures","- Load balancer distributes traffic
+- VMSS auto-scales on load
+- Monitoring + alerting functional",4.7,4.6,4.9
+9,Medium, Autoscaling Lambda + DynamoDB Stack,"Test event-driven, serverless architecture setup","- Lambda (Node.js/Python)
+- API Gateway
+- DynamoDB with auto-scaling
+- X-Ray + CloudWatch integration","- End-to-end IaC
+- Sample workload simulation script
+- Observability with tracing","- System scales on demand
+- Logs + traces available
+- Low latency under simulated load",4.8,4.9,5
+10,Medium, Incident Response Workflow Automation,Evaluate Ana's ability to automate SRE response playbooks,"- Trigger via CloudWatch alarm
+- Lambda or SSM to remediate
+- Notification via SNS/Slack
+- Optional: PagerDuty webhook","- IaC for alarm-to-action setup
+- Playbook for issue resolution (e.g., restart instance)
+- Slack/PagerDuty integration","- Incident triggers remediation
+- Notification sent
+- Remediation verified via logs or status change",4.9,4.8,5
+11,High,Multi-Region Active-Active Architecture on AWS,"Test Ana's ability to design and deploy globally available, resilient services","- Global Route 53 with latency-based routing
+- ALB + EC2 or Lambda in 2+ regions
+- Global Aurora or DynamoDB Global Tables
+- Cross-region replication + failover plan","- Full IaC (Terraform) with environment separation
+- Health check + failover validation logic
+- Automated DR runbook","- Application traffic routed correctly per region
+- Simulated region failure triggers correct failover
+- Data consistency maintained",4.2,4.2,5
+12,Super Complex," Kubernetes Platform with GitOps, Policy-as-Code, and Chaos Engineering",Validate Ana’s full-stack SRE capabilities in Kubernetes,"- EKS/AKS cluster setup
+- FluxCD or ArgoCD for GitOps
+- OPA/Gatekeeper for policy enforcement
+- Prometheus + Grafana + Alertmanager
+- Chaos injection via Litmus or ChaosMesh","- Helm charts or YAML definitions via GitOps
+- RBAC + policy rules
+- Chaos test scripts + rollback plan","- GitOps reflects live state
+- Policies prevent misconfigurations
+- System self-heals after chaos test",3.7,3.5,5
+13,High, Full Infrastructure and App Stack with Zero Trust Security,Assess Ana’s ability to deploy and enforce advanced security posture,"- AWS VPC with PrivateLink + no public IPs
+- Identity federation with IAM + SSO
+- End-to-end TLS
+- WAF, GuardDuty, Inspector, and centralized logging","- Secure Terraform modules
+- IAM permission boundaries + policy sets
+- Integrated threat detection alerts","- All services reachable only via private endpoints
+- Security tools integrated
+- Alerts fire on anomalous activity",4,4,5
+14,High, Self-Healing ML Pipeline with Monitoring and Drift Detection,Test Ana's ability to operate infrastructure for ML workflows,"- SageMaker pipelines (or Azure ML)
+- Feature store + model registry
+- Monitoring for model drift / infra failures
+- Auto-rollback or retraining triggers","- IaC + ML pipeline definition
+- Drift metrics monitoring
+- Playbook for remediation (e.g., re-deploy model)","- Pipeline runs autonomously
+- Drift detection works
+- Self-healing triggers appropriate retraining or rollback",4,4.1,5
+15,High, Enterprise-Scale Observability Platform for Hybrid Cloud,Validate Ana's ability to unify observability across cloud and on-prem,"- OpenTelemetry agent deployment (cloud + edge)
+- Central collector + backend (e.g., Grafana Tempo, Loki)
+- Multi-cloud integration (AWS, Azure, on-prem)
+- SLA dashboards and SLO error budgeting","- IaC for agents, collectors, storage
+- Unified metrics/logs/traces
+- Alerts tied to SLO thresholds","- Data flows from all sources
+- Dashboards visualize end-to-end state
+- Alerts fire on error budget breaches",4,4,5
+16,Simple,Site-to-Site VPN: AWS VPC to Simulated On-Prem,Validate Ana's ability to set up a secure VPN tunnel and basic routing,"- AWS VPC with Customer Gateway (CGW)
+- Virtual Private Gateway (VGW)
+- Simulated on-prem via EC2 with strongSwan
+- Static routing","- Terraform for VPC, VGW, CGW, routes
+- VPN configuration script for strongSwan
+- Health check script (e.g., ping from on-prem to AWS)","- Tunnel is UP and stable
+- Packets route from EC2 (on-prem) to AWS EC2
+- Routing and security groups configured correctly",4.9,4.8,5
+17,Medium, Transit Gateway VPN Hub with Two Spoke VPCs,Test Ana's ability to manage hub-and-spoke VPN and multi-VPC routing,"- AWS Transit Gateway
+- Two VPCs attached as spokes
+- Site-to-Site VPN from hub to simulated on-prem (EC2 strongSwan)
+- Route tables with correct propagation","- Terraform for TGW, attachments, VPN tunnel, route tables
+- Monitoring via CloudWatch (Tunnel state)
+- Alerts if tunnel goes down","- Both VPCs communicate with on-prem via TGW
+- VPN tunnel auto-recovers after failure
+- CloudWatch alarms active and accurate",4.5,4.6,5
+18,High, Multi-Region VPN Failover with High Availability,Validate Ana’s capability to operate HA VPN mesh across multiple AWS regions with dynamic failover,"- Primary AWS region with TGW
+- Secondary region with failover tunnel
+- Two Customer Gateways (strongSwan in EC2)
+- BGP routing + tunnel health checks
+- Automated failover logic via Lambda","- Terraform for full multi-region topology
+- BGP config templates
+- CloudWatch + Lambda for auto-remediation
+- Test scripts for simulated tunnel failure","- Tunnel failover occurs with <1-minute downtime
+- Latency-based routing observed
+- Remediation logic correctly executes
+- Logs and metrics available for validation",4,4,5
+,Average Score,,,,,,4.4,4.3,4.9

@@ -1,0 +1,36 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRestrictRoleBindings
+metadata:
+  name: restrict-role-bindings
+spec:
+  match:
+    kinds:
+      - apiGroups: ["rbac.authorization.k8s.io"]
+        kinds: ["ClusterRoleBinding", "RoleBinding"]
+  parameters:
+    restrictedRoles:
+      - cluster-admin
+      - admin
+    restrictedSubjects:
+      - kind: ServiceAccount
+        name: default
+      - kind: Group
+        name: system:unauthenticated
+      - kind: Group
+        name: system:anonymous
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredAnnotations
+metadata:
+  name: require-role-annotations
+spec:
+  match:
+    kinds:
+      - apiGroups: ["rbac.authorization.k8s.io"]
+        kinds: ["Role", "ClusterRole"]
+  parameters:
+    message: "All roles must have a description annotation"
+    annotations:
+      - key: "description"
+        allowedRegex: "^.{10,}$"  # At least 10 characters description

@@ -1,0 +1,55 @@
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: critical-hourly-backup
+  namespace: velero
+spec:
+  schedule: "0 * * * *"  # Every hour
+  template:
+    includedNamespaces:
+      - argocd
+      - monitoring
+      - gatekeeper-system
+    includedResources:
+      - secrets
+      - configmaps
+      - persistentvolumeclaims
+    includeClusterResources: true
+    storageLocation: aws-backup
+    volumeSnapshotLocations:
+      - aws-snapshots
+    ttl: 168h  # 7 days
+
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: etcd-backup
+  namespace: velero
+spec:
+  schedule: "0 */4 * * *"  # Every 4 hours
+  template:
+    includedNamespaces:
+      - kube-system
+    includedResources:
+      - etcd
+    includeClusterResources: true
+    storageLocation: aws-backup
+    hooks:
+      resources:
+        - name: etcd-backup-hook
+          includedNamespaces:
+            - kube-system
+          pre:
+            - exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - etcdctl snapshot save /backup/etcd-snapshot
+          post:
+            - exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - rm -f /backup/etcd-snapshot
+    ttl: 720h  # 30 days

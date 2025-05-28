@@ -1,0 +1,24 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPPrivilegedContainer
+metadata:
+  name: prod-no-privileged
+spec:
+  match:
+    excludedNamespaces: 
+      - kube-system
+      - monitoring
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    allowedHostPaths: []
+    allowedUsers: []
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    volumes:
+      - configMap
+      - emptyDir
+      - projected
+      - secret
+      - downwardAPI
+      - persistentVolumeClaim

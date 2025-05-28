@@ -1,0 +1,74 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-metrics
+  namespace: monitoring
+spec:
+  groups:
+  - name: backup.rules
+    rules:
+    - record: backup_success_rate
+      expr: |
+        sum(rate(velero_backup_success_total[24h])) /
+        sum(rate(velero_backup_attempt_total[24h]))
+    
+    - record: backup_duration_seconds_bucket:rate5m
+      expr: |
+        rate(velero_backup_duration_seconds_bucket[5m])
+    
+    - record: restore_success_rate
+      expr: |
+        sum(rate(velero_restore_success_total[24h])) /
+        sum(rate(velero_restore_attempt_total[24h]))
+    
+    - record: backup_size_bytes:avg
+      expr: |
+        avg_over_time(velero_backup_size_bytes[24h])
+    
+    - record: backup_resource_count:sum
+      expr: |
+        sum by (backup) (velero_backup_resource_count)
+
+  - name: backup.alerts
+    rules:
+    - alert: BackupSuccessRateLow
+      expr: backup_success_rate < 0.95
+      for: 24h
+      labels:
+        severity: warning
+      annotations:
+        summary: Backup success rate below 95%
+        description: The backup success rate over the last 24h is {{ $value }}
+
+    - alert: BackupDurationIncreasing
+      expr: |
+        rate(velero_backup_duration_seconds_sum[6h]) >
+        rate(velero_backup_duration_seconds_sum[24h]) * 1.5
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Backup duration is increasing
+        description: Backup duration has increased by 50% compared to 24h average
+
+    - alert: RestoreFailureDetected
+      expr: |
+        increase(velero_restore_failure_total[1h]) > 0
+      labels:
+        severity: critical
+      annotations:
+        summary: Restore operation failed
+        description: A restore operation has failed in the last hour
+
+    - alert: BackupSizeAbnormal
+      expr: |
+        abs(
+          backup_size_bytes:avg -
+          avg_over_time(backup_size_bytes:avg[7d])
+        ) > avg_over_time(backup_size_bytes:avg[7d]) * 0.3
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: Backup size abnormal
+        description: Backup size has changed by more than 30% compared to 7-day average

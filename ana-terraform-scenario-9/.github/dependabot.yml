@@ -1,0 +1,35 @@
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "maintainers"
+    labels:
+      - "github-actions"
+      - "dependencies"
+
+  # Maintain dependencies for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "maintainers"
+    labels:
+      - "npm"
+      - "dependencies"
+    versioning-strategy: increase
+
+  # Maintain dependencies for Terraform
+  - package-ecosystem: "terraform"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "maintainers"
+    labels:
+      - "terraform"
+      - "dependencies"

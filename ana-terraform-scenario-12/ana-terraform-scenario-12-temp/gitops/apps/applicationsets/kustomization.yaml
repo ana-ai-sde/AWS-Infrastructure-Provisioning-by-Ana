@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+- monitoring.yaml
+- policies.yaml
+- chaos.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: argocd
+  app.kubernetes.io/part-of: platform-engineering
+
+commonAnnotations:
+  argocd.argoproj.io/sync-wave: "1"

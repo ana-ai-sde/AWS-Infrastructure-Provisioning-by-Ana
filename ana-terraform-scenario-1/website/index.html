@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Your Static Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Your Static Website!</h1>
+        <p>This website is hosted on AWS using:</p>
+        <ul style="list-style: none; padding: 0;">
+            <li>✨ S3 for static content hosting</li>
+            <li>🚀 CloudFront for content delivery</li>
+            <li>🔒 SSL/TLS for secure access</li>
+            <li>🌐 Route 53 for DNS management</li>
+        </ul>
+        <p>Infrastructure provisioned with Terraform</p>
+    </div>
+</body>
+</html>

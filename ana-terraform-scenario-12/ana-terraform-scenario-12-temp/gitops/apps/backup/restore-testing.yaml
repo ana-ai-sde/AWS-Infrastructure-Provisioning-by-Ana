@@ -1,0 +1,103 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: restore-testing
+  namespace: velero
+spec:
+  schedule: "0 4 * * *"  # Daily at 4 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: velero-verifier
+          containers:
+          - name: restore-tester
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              
+              # Test scenarios
+              declare -A test_scenarios=(
+                ["config-restore"]="configmaps,secrets"
+                ["stateful-restore"]="statefulsets,persistentvolumeclaims"
+                ["network-restore"]="services,networkpolicies"
+                ["rbac-restore"]="roles,rolebindings,serviceaccounts"
+              )
+              
+              # Function to test restore
+              test_restore() {
+                local scenario=$1
+                local resources=$2
+                local test_ns="restore-test-${scenario}-$(date +%s)"
+                
+                echo "Testing ${scenario} restore..."
+                
+                # Create test namespace
+                kubectl create namespace ${test_ns}
+                
+                # Create test resources
+                for resource in ${resources//,/ }; do
+                  kubectl create -f "/test-data/${scenario}/${resource}.yaml" -n ${test_ns}
+                done
+                
+                # Create backup
+                velero backup create ${scenario}-test \
+                  --include-namespaces ${test_ns} \
+                  --include-resources ${resources}
+                
+                # Wait for backup completion
+                velero backup wait ${scenario}-test
+                
+                # Delete test namespace
+                kubectl delete namespace ${test_ns}
+                
+                # Restore to new namespace
+                local restore_ns="${test_ns}-restored"
+                velero restore create --from-backup ${scenario}-test \
+                  --include-namespaces ${test_ns} \
+                  --namespace-mappings ${test_ns}:${restore_ns}
+                
+                # Wait for restore completion
+                velero restore wait ${scenario}-test
+                
+                # Verify restored resources
+                for resource in ${resources//,/ }; do
+                  if ! kubectl get ${resource} -n ${restore_ns} > /dev/null; then
+                    echo "Failed to restore ${resource} in ${scenario}"
+                    return 1
+                  fi
+                done
+                
+                # Cleanup
+                kubectl delete namespace ${restore_ns}
+                velero backup delete ${scenario}-test
+                
+                echo "${scenario} restore test successful"
+                return 0
+              }
+              
+              # Run all test scenarios
+              failed_tests=0
+              for scenario in "${!test_scenarios[@]}"; do
+                if ! test_restore "$scenario" "${test_scenarios[$scenario]}"; then
+                  failed_tests=$((failed_tests + 1))
+                fi
+              done
+              
+              # Report results
+              echo "Restore testing completed. Failed tests: ${failed_tests}"
+              exit ${failed_tests}
+            volumeMounts:
+            - name: test-data
+              mountPath: /test-data
+          volumes:
+          - name: test-data
+            configMap:
+              name: restore-test-data
+          restartPolicy: OnFailure

@@ -1,0 +1,16 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# they will be requested for review when someone opens a pull request.
+*       @maintainers
+
+# Terraform configurations
+*.tf    @infrastructure-team
+
+# Lambda function code
+/modules/lambda/src/    @backend-team
+
+# Load testing code
+load-test.js    @qa-team
+
+# Documentation
+*.md    @docs-team

@@ -1,0 +1,90 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.slack: monitoring-alerts
+    notifications.argoproj.io/subscribe.pagerduty: prod-alerts
+spec:
+  generators:
+  - list:
+      elements:
+      - environment: prod
+        url: https://kubernetes.default.svc
+        values:
+          replicaCount: 2
+          retention: 30d
+          storageSize: 100Gi
+      - environment: staging
+        url: https://kubernetes.default.svc
+        values:
+          replicaCount: 1
+          retention: 7d
+          storageSize: 50Gi
+      - environment: dev
+        url: https://kubernetes.default.svc
+        values:
+          replicaCount: 1
+          retention: 2d
+          storageSize: 20Gi
+  template:
+    metadata:
+      name: monitoring-{{environment}}
+      namespace: argocd
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+        argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    spec:
+      project: default
+      source:
+        repoURL: {{values.gitRepository}}
+        targetRevision: HEAD
+        path: gitops/monitoring/overlays/{{environment}}
+      destination:
+        server: {{url}}
+        namespace: monitoring
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+      - group: ""
+        kind: Secret
+        jsonPointers:
+        - /data
+      syncWindows:
+      - kind: allow
+        schedule: "10 * * * *"  # Every hour at 10 minutes past
+        duration: 1h
+        applications:
+        - monitoring-{{environment}}
+      - kind: deny
+        schedule: "0 22 * * *"  # Block updates during peak hours
+        duration: 8h
+        applications:
+        - monitoring-prod
+      health:
+        healthChecks:
+        - group: apps
+          kind: Deployment
+          name: prometheus-operator
+          namespace: monitoring
+        - group: apps
+          kind: StatefulSet
+          name: prometheus
+          namespace: monitoring
+        - group: apps
+          kind: StatefulSet
+          name: alertmanager
+          namespace: monitoring

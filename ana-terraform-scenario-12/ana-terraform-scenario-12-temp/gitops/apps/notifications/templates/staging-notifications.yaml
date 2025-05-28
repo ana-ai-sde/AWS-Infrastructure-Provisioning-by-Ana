@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-staging
+  namespace: argocd
+data:
+  template.staging-slack-sync: |
+    message: |
+      *[STAGING] Application Sync Status Update*
+      *Application:* {{.app.metadata.name}}
+      *Status:* {{.app.status.sync.status}}
+      *Operation:* {{.app.status.operationState.phase}}
+      *Time:* {{.app.status.operationState.finishedAt}}
+      
+      *Health Status:* {{.app.status.health.status}}
+      {{if eq .app.status.health.status "Degraded"}}
+      *Affected Resources:*
+      {{range .app.status.resources}}
+      {{if eq .health.status "Degraded"}}
+        - {{.kind}}/{{.name}}
+      {{end}}
+      {{end}}
+      {{end}}
+
+  trigger.staging-sync-failed: |
+    - description: Staging application sync failed
+      oncePer: 30m
+      send:
+      - staging-slack-sync
+      when: |
+        app.metadata.labels['environment'] == 'staging' &&
+        app.status.operationState.phase in ['Error', 'Failed']
+
+  trigger.staging-health-degraded: |
+    - description: Staging application health degraded
+      oncePer: 15m
+      send:
+      - staging-slack-sync
+      when: |
+        app.metadata.labels['environment'] == 'staging' &&
+        app.status.health.status == 'Degraded'

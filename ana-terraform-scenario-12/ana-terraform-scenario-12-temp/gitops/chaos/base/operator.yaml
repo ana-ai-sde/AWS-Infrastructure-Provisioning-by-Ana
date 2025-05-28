@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: litmus
+  namespace: litmus
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: litmus
+      version: "2.15.0"
+      sourceRef:
+        kind: HelmRepository
+        name: litmuschaos
+        namespace: litmus
+  values:
+    portal:
+      enabled: true
+      frontend:
+        replicas: 1
+        service:
+          type: ClusterIP
+    operator:
+      replicas: 1
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+    runner:
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi

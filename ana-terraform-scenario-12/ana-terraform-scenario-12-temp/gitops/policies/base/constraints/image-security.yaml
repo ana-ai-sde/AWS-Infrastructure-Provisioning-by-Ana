@@ -1,0 +1,40 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRepos
+metadata:
+  name: allowed-image-repos
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+      - kube-system
+      - gatekeeper-system
+  parameters:
+    repos:
+      - "docker.io/library/*"
+      - "k8s.gcr.io/*"
+      - "public.ecr.aws/*"
+      - "602401143452.dkr.ecr.ap-south-1.amazonaws.com/*"  # Amazon EKS repository
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: require-pod-labels
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces:
+      - kube-system
+      - gatekeeper-system
+  parameters:
+    labels:
+      - key: "app"
+        allowedRegex: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      - key: "environment"
+        allowedRegex: "^(prod|staging|dev)$"
+      - key: "owner"
+        allowedRegex: "^[a-zA-Z]+$"

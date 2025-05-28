@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-prod
+  namespace: argocd
+data:
+  template.prod-slack-sync: |
+    message: |
+      *[PRODUCTION] Application Sync Status Update*
+      *Application:* {{.app.metadata.name}}
+      *Status:* {{.app.status.sync.status}}
+      *Operation:* {{.app.status.operationState.phase}}
+      *Time:* {{.app.status.operationState.finishedAt}}
+      *Details:* {{.app.status.operationState.message}}
+      
+      *Health Status:* {{.app.status.health.status}}
+      *Resources:*
+      {{range .app.status.resources}}
+        - {{.kind}}/{{.name}}: {{.health.status}}
+      {{end}}
+
+  template.prod-pagerduty-alert: |
+    description: |
+      [PRODUCTION] Critical Alert - {{.app.metadata.name}}
+      Status: {{.app.status.sync.status}}
+      Health: {{.app.status.health.status}}
+      Message: {{.app.status.operationState.message}}
+    client: ArgoCD Production
+    client_url: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}
+    severity: critical
+    class: deployment
+    component: {{.app.metadata.name}}
+    group: production
+
+  trigger.prod-sync-failed: |
+    - description: Production application sync failed
+      oncePer: 1h
+      send:
+      - prod-slack-sync
+      - prod-pagerduty-alert
+      when: |
+        app.metadata.labels['environment'] == 'prod' &&
+        app.status.operationState.phase in ['Error', 'Failed']
+
+  trigger.prod-health-degraded: |
+    - description: Production application health degraded
+      oncePer: 30m
+      send:
+      - prod-slack-sync
+      - prod-pagerduty-alert
+      when: |
+        app.metadata.labels['environment'] == 'prod' &&
+        app.status.health.status == 'Degraded'

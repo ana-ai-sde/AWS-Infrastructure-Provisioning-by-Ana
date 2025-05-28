@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: velero-verifier
+          containers:
+          - name: backup-verifier
+            image: velero/velero:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Get latest backup
+              LATEST_BACKUP=$(velero backup get --output json | jq -r '.items[0].metadata.name')
+              
+              # Create a test restore in temporary namespace
+              TEST_NS="backup-test-$(date +%s)"
+              velero restore create --from-backup $LATEST_BACKUP \
+                --namespace-mappings monitoring:$TEST_NS \
+                --include-namespaces monitoring \
+                --include-resources deployments,configmaps,secrets \
+                restore-test-$LATEST_BACKUP
+              
+              # Wait for restore to complete
+              velero restore wait restore-test-$LATEST_BACKUP
+              
+              # Verify restored resources
+              RESTORE_STATUS=$(velero restore get restore-test-$LATEST_BACKUP -o json | jq -r '.status.phase')
+              if [ "$RESTORE_STATUS" != "Completed" ]; then
+                echo "Restore failed: $RESTORE_STATUS"
+                exit 1
+              fi
+              
+              # Cleanup test namespace
+              kubectl delete namespace $TEST_NS
+            env:
+            - name: VELERO_NAMESPACE
+              value: velero
+          restartPolicy: OnFailure

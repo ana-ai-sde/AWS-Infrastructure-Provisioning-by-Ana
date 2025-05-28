@@ -1,0 +1,4 @@
+aws_region = "ap-south-1"
+instance_id = "i-1234567890abcdef0"
+notification_emails = ["sre-team@example.com"]
+cpu_threshold = 80

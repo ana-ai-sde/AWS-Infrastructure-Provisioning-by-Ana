@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: security-policies
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.slack: security-alerts
+    notifications.argoproj.io/subscribe.pagerduty: prod-alerts
+spec:
+  generators:
+  - list:
+      elements:
+      - environment: prod
+        url: https://kubernetes.default.svc
+        values:
+          strictMode: true
+          enforceAll: true
+      - environment: staging
+        url: https://kubernetes.default.svc
+        values:
+          strictMode: true
+          enforceAll: false
+      - environment: dev
+        url: https://kubernetes.default.svc
+        values:
+          strictMode: false
+          enforceAll: false
+  template:
+    metadata:
+      name: policies-{{environment}}
+      namespace: argocd
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"  # Policies should be applied first
+    spec:
+      project: default
+      source:
+        repoURL: {{values.gitRepository}}
+        targetRevision: HEAD
+        path: gitops/policies/overlays/{{environment}}
+      destination:
+        server: {{url}}
+        namespace: gatekeeper-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - Replace=true  # Ensure policy changes are applied immediately
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+      - group: constraints.gatekeeper.sh
+        kind: "*"
+        jsonPointers:
+        - /status
+      syncWindows:
+      - kind: allow
+        schedule: "0 * * * *"  # Every hour
+        duration: 30m
+        applications:
+        - policies-{{environment}}
+      health:
+        healthChecks:
+        - group: apps
+          kind: Deployment
+          name: gatekeeper-controller-manager
+          namespace: gatekeeper-system
+        - group: apps
+          kind: Deployment
+          name: gatekeeper-audit
+          namespace: gatekeeper-system

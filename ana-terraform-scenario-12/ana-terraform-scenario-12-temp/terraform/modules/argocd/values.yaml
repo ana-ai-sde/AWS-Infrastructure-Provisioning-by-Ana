@@ -1,0 +1,89 @@
+global:
+  securityContext:
+    fsGroup: 999
+    runAsNonRoot: true
+    runAsUser: 999
+
+server:
+  extraArgs:
+    - --insecure # Required when SSL termination is done at ingress level
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    hosts:
+      - argocd.internal
+    tls: true
+
+  config:
+    url: https://argocd.internal
+    admin.enabled: "false" # Disable local admin user
+    passwordSecret: ${admin_password_secret_name}
+
+    # Repository credentials configuration
+    repositories: |
+      ${repositories}
+
+    # OIDC configuration (if enabled)
+    %{ if enable_dex }
+    dex.config: |
+      ${oidc_config}
+    %{ endif }
+
+    # Resource customizations
+    resource.customizations: |
+      networking.k8s.io/Ingress:
+        health.lua: |
+          hs = {}
+          hs.status = "Healthy"
+          return hs
+
+      apps/Deployment:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.availableReplicas ~= nil and obj.status.availableReplicas > 0 then
+              hs.status = "Healthy"
+              hs.message = "Available replicas: " .. obj.status.availableReplicas
+            else
+              hs.status = "Degraded"
+              hs.message = "No available replicas"
+            end
+          else
+            hs.status = "Progressing"
+            hs.message = "Waiting for status"
+          end
+          return hs
+
+repoServer:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: ${aws_iam_role.argocd.arn}
+
+applicationSet:
+  enabled: true
+
+notifications:
+  enabled: true
+
+redis:
+  enabled: true
+  securityContext:
+    fsGroup: 999
+    runAsNonRoot: true
+    runAsUser: 999
+
+controller:
+  serviceAccount:
+    create: false # We create it separately with proper IAM role annotations
+    name: argocd-application-controller
+
+dex:
+  enabled: ${enable_dex}

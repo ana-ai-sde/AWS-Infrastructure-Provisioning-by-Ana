@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: prod-resilience-test
+spec:
+  entrypoint: prod-chaos
+  serviceAccountName: litmus-admin
+  templates:
+  - name: prod-chaos
+    steps:
+    - - name: preflight-checks
+        template: system-checks
+    - - name: pod-chaos
+        template: pod-delete
+    - - name: verify-recovery
+        template: health-check
+    - - name: network-chaos
+        template: network-disruption
+    - - name: verify-connectivity
+        template: network-check
+    - - name: load-test
+        template: cpu-memory-hog
+    - - name: final-verification
+        template: full-health-check
+
+  - name: system-checks
+    script:
+      image: bitnami/kubectl:latest
+      command: [bash]
+      source: |
+        kubectl get nodes -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -v False
+        kubectl get pods -A -o jsonpath='{.items[*].status.phase}' | grep -v Running | grep -v Succeeded
+
+  - name: health-check
+    script:
+      image: bitnami/kubectl:latest
+      command: [bash]
+      source: |
+        kubectl wait --for=condition=available deployment -l app=production --timeout=300s
+
+  - name: network-check
+    script:
+      image: appropriate/curl:latest
+      command: [bash]
+      source: |
+        for svc in $(kubectl get svc -l app=production -o name); do
+          curl -s ${svc}:80/health || exit 1
+        done
+
+  - name: full-health-check
+    steps:
+    - - name: check-deployments
+        template: health-check
+    - - name: check-network
+        template: network-check
+    - - name: check-metrics
+        template: metrics-check
+
+  - name: metrics-check
+    container:
+      image: prom/prometheus:latest
+      command: [sh, -c]
+      args:
+        - |
+          curl -s http://prometheus-operated:9090/api/v1/query?query=up | grep -q '"value":\[.*,"1"\]'

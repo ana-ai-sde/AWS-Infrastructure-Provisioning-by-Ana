@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus-prod
+  namespace: monitoring
+spec:
+  replicas: 2
+  retention: 30d
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: 100Gi
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  alerting:
+    alertmanagers:
+      - namespace: monitoring
+        name: alertmanager-prod
+        port: web

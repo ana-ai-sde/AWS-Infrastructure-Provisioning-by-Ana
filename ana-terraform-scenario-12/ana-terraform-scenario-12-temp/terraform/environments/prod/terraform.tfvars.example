@@ -1,0 +1,40 @@
+# General Configuration
+aws_region   = "ap-south-1"
+environment  = "prod"
+project_name = "revca-cluster"
+account_id   = "229132727554"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+availability_zones = [
+  "ap-south-1a",
+  "ap-south-1b",
+  "ap-south-1c"
+]
+private_subnet_cidrs = [
+  "10.0.1.0/24",
+  "10.0.2.0/24",
+  "10.0.3.0/24"
+]
+public_subnet_cidrs = [
+  "10.0.4.0/24",
+  "10.0.5.0/24",
+  "10.0.6.0/24"
+]
+
+# EKS Configuration
+kubernetes_version = "1.27"
+desired_size      = 2
+min_size          = 1
+max_size          = 4
+instance_types    = ["t3.medium"]
+
+# ArgoCD Configuration
+gitops_repo_url = "https://github.com/your-org/gitops-repo.git"
+enable_dex      = false
+
+# Optional: OIDC Configuration for Dex
+oidc_config = ""
+
+# Optional: Repository Configurations
+repository_configs = ""

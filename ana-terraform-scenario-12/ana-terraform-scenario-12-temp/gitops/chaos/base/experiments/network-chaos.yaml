@@ -1,0 +1,51 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosExperiment
+metadata:
+  name: network-chaos
+  namespace: litmus
+spec:
+  definition:
+    scope: Namespaced
+    permissions:
+      - apiGroups:
+          - ""
+          - "apps"
+          - "batch"
+          - "litmuschaos.io"
+        resources:
+          - "deployments"
+          - "pods"
+          - "pods/log"
+          - "events"
+          - "chaosengines"
+          - "chaosexperiments"
+          - "chaosresults"
+        verbs:
+          - "create"
+          - "list"
+          - "get"
+          - "patch"
+          - "update"
+          - "delete"
+    image: "litmuschaos/go-runner:latest"
+    imagePullPolicy: Always
+    args:
+      - -c
+      - ./experiments -name network-chaos
+    command:
+      - /bin/bash
+    env:
+      - name: TOTAL_CHAOS_DURATION
+        value: '60'
+      - name: NETWORK_INTERFACE
+        value: 'eth0'
+      - name: NETWORK_LATENCY
+        value: '2000'
+      - name: NETWORK_PACKET_LOSS_PERCENTAGE
+        value: '100'
+      - name: CONTAINER_RUNTIME
+        value: 'containerd'
+      - name: SOCKET_PATH
+        value: '/run/containerd/containerd.sock'
+    labels:
+      name: network-chaos

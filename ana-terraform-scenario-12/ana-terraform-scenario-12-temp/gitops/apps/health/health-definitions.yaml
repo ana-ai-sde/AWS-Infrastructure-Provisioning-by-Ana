@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-health-definitions
+  namespace: argocd
+data:
+  monitoring-health: |
+    prometheus:
+      group: monitoring.coreos.com
+      kind: Prometheus
+      status:
+        healthStatus:
+          healthy: ["Available"]
+          degraded: ["Degraded"]
+          progressing: ["Reconciling"]
+    alertmanager:
+      group: monitoring.coreos.com
+      kind: Alertmanager
+      status:
+        healthStatus:
+          healthy: ["Available"]
+          degraded: ["Degraded"]
+          progressing: ["Reconciling"]
+    grafana:
+      group: apps
+      kind: Deployment
+      status:
+        healthStatus:
+          healthy: ["Available"]
+          degraded: ["Degraded"]
+          progressing: ["Progressing"]
+
+  policy-health: |
+    gatekeeper:
+      group: apps
+      kind: Deployment
+      status:
+        healthStatus:
+          healthy: ["Available"]
+          degraded: ["Degraded"]
+          progressing: ["Progressing"]
+    constraints:
+      group: constraints.gatekeeper.sh
+      kind: "*"
+      status:
+        healthStatus:
+          healthy: ["Enforced"]
+          degraded: ["Failed"]
+          progressing: ["Pending"]
+
+  chaos-health: |
+    litmus:
+      group: litmuschaos.io
+      kind: ChaosEngine
+      status:
+        healthStatus:
+          healthy: ["Completed"]
+          degraded: ["Error"]
+          progressing: ["Running"]
+    workflow:
+      group: argoproj.io
+      kind: Workflow
+      status:
+        healthStatus:
+          healthy: ["Succeeded"]
+          degraded: ["Failed", "Error"]
+          progressing: ["Running", "Pending"]

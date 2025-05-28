@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restore-playbook
+  namespace: velero
+data:
+  restore-procedure.md: |
+    # EKS Cluster Restoration Procedure
+
+    ## Pre-Restoration Checklist
+    1. Verify AWS credentials and permissions
+    2. Ensure Velero client is installed and configured
+    3. Check available backups:
+       ```bash
+       velero backup get
+       ```
+    4. Verify target cluster is ready:
+       ```bash
+       kubectl cluster-info
+       kubectl get nodes
+       ```
+
+    ## Critical Components Restoration
+    
+    ### 1. ETCD and Core Components
+    ```bash
+    # Restore ETCD backup
+    velero restore create etcd-restore \
+      --from-backup etcd-backup-latest \
+      --include-namespaces kube-system \
+      --include-resources etcd
+
+    # Wait for completion
+    velero restore wait etcd-restore
+    ```
+
+    ### 2. Platform Services
+    ```bash
+    # Restore ArgoCD
+    velero restore create argocd-restore \
+      --from-backup critical-hourly-backup-latest \
+      --include-namespaces argocd
+
+    # Restore monitoring stack
+    velero restore create monitoring-restore \
+      --from-backup critical-hourly-backup-latest \
+      --include-namespaces monitoring
+
+    # Restore security policies
+    velero restore create policies-restore \
+      --from-backup critical-hourly-backup-latest \
+      --include-namespaces gatekeeper-system
+    ```
+
+    ### 3. Application Data
+    ```bash
+    # Restore application namespaces
+    velero restore create app-restore \
+      --from-backup daily-cluster-backup-latest \
+      --exclude-namespaces kube-system,argocd,monitoring,gatekeeper-system
+    ```
+
+    ## Post-Restoration Verification
+
+    ### 1. System Health Check
+    ```bash
+    # Check core services
+    kubectl get pods -n kube-system
+    kubectl get pods -n argocd
+    kubectl get pods -n monitoring
+    ```
+
+    ### 2. Data Verification
+    ```bash
+    # Verify PVCs
+    kubectl get pvc --all-namespaces
+
+    # Check ConfigMaps and Secrets
+    kubectl get configmaps --all-namespaces
+    kubectl get secrets --all-namespaces
+    ```
+
+    ### 3. Application Health
+    ```bash
+    # Check ArgoCD applications
+    argocd app list
+    argocd app get <app-name>
+
+    # Verify monitoring
+    kubectl -n monitoring get pods
+    ```
+
+    ## Troubleshooting
+
+    ### Common Issues
+
+    1. Restore Fails with Permission Error
+       - Verify AWS IAM roles and policies
+       - Check Velero service account permissions
+       - Ensure proper RBAC in target cluster
+
+    2. PVC Restore Issues
+       - Verify storage class availability
+       - Check volume snapshot status
+       - Ensure proper AWS EBS permissions
+
+    3. Network Policy Conflicts
+       - Temporarily disable Gatekeeper
+       - Restore core networking components first
+       - Re-enable security policies gradually
+
+    ### Recovery Commands
+
+    ```bash
+    # Check restore logs
+    velero restore logs <restore-name>
+
+    # Describe restore
+    velero restore describe <restore-name>
+
+    # Delete failed restore
+    velero restore delete <restore-name>
+
+    # Create new restore with debug logging
+    velero restore create --from-backup <backup-name> \
+      --debug \
+      --wait
+    ```
+
+    ## Contact Information
+
+    - Platform Team: platform@company.com
+    - Security Team: security@company.com
+    - Emergency: +1-xxx-xxx-xxxx

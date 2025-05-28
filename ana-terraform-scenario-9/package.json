@@ -1,0 +1,12 @@
+{
+  "name": "serverless-api-load-test",
+  "version": "1.0.0",
+  "description": "Load testing script for serverless API",
+  "main": "load-test.js",
+  "scripts": {
+    "test": "node load-test.js"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1450.0"
+  }
+}

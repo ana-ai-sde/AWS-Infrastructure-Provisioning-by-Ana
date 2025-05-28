@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: application-resilience-test
+  namespace: litmus
+spec:
+  entrypoint: application-chaos
+  templates:
+  - name: application-chaos
+    steps:
+    - - name: pod-delete-chaos
+        template: pod-delete
+    - - name: verify-application
+        template: application-check
+    - - name: network-chaos
+        template: network-disruption
+    - - name: verify-network
+        template: application-check
+    - - name: resource-chaos
+        template: cpu-memory-hog
+    - - name: final-verification
+        template: application-check
+
+  - name: pod-delete
+    container:
+      image: litmuschaos/litmus-checker:latest
+      args: 
+        - -file=/experiments/pod-delete.yaml
+      volumeMounts:
+        - name: experiments
+          mountPath: /experiments
+
+  - name: network-disruption
+    container:
+      image: litmuschaos/litmus-checker:latest
+      args:
+        - -file=/experiments/network-chaos.yaml
+      volumeMounts:
+        - name: experiments
+          mountPath: /experiments
+
+  - name: cpu-memory-hog
+    container:
+      image: litmuschaos/litmus-checker:latest
+      args:
+        - -file=/experiments/cpu-memory-hog.yaml
+      volumeMounts:
+        - name: experiments
+          mountPath: /experiments
+
+  - name: application-check
+    container:
+      image: litmuschaos/litmus-checker:latest
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          kubectl wait --for=condition=available deployment -l app=application --timeout=300s
+          if [ $? -eq 0 ]; then
+            echo "Application is healthy"
+            exit 0
+          else
+            echo "Application health check failed"
+            exit 1
+          fi
+
+  volumes:
+    - name: experiments
+      configMap:
+        name: chaos-experiments

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-dev
+  namespace: argocd
+data:
+  template.dev-slack-sync: |
+    message: |
+      *[DEV] Application Update*
+      *App:* {{.app.metadata.name}}
+      *Status:* {{.app.status.sync.status}}
+      *Health:* {{.app.status.health.status}}
+      {{if ne .app.status.operationState.message ""}}
+      *Message:* {{.app.status.operationState.message}}
+      {{end}}
+
+  trigger.dev-sync-failed: |
+    - description: Dev application sync failed
+      oncePer: 15m
+      send:
+      - dev-slack-sync
+      when: |
+        app.metadata.labels['environment'] == 'dev' &&
+        app.status.operationState.phase in ['Error', 'Failed']
+
+  trigger.dev-health-degraded: |
+    - description: Dev application health degraded
+      oncePer: 5m
+      send:
+      - dev-slack-sync
+      when: |
+        app.metadata.labels['environment'] == 'dev' &&
+        app.status.health.status == 'Degraded'

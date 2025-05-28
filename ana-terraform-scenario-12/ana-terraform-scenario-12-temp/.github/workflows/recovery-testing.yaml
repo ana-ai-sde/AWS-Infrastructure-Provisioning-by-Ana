@@ -1,0 +1,52 @@
+# Update existing file to include visualization
+name: Recovery Testing
+
+# ... (previous content remains the same until benchmark-recovery job) ...
+
+  benchmark-recovery:
+    name: Benchmark Recovery Performance
+    needs: test-recovery
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v2
+        with:
+          path: test-results
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install matplotlib seaborn pandas
+
+      - name: Analyze performance
+        run: |
+          python3 gitops/apps/backup/recovery/analyze_performance.py \
+            --results-dir test-results \
+            --output benchmark-report.json
+
+      - name: Generate visualizations
+        run: |
+          python3 gitops/apps/backup/recovery/visualize_results.py \
+            --report benchmark-report.json \
+            --output-dir visualization-results
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v2
+        with:
+          name: recovery-benchmark-report
+          path: |
+            benchmark-report.json
+            visualization-results/
+
+      - name: Deploy report to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./visualization-results
+          destination_dir: recovery-reports/${{ github.sha }}

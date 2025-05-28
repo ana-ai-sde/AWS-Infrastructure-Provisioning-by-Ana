@@ -1,0 +1,30 @@
+apiVersion: scheduling.k8s.io/v1
+kind: CronJob
+metadata:
+  name: chaos-schedule
+  namespace: litmus
+spec:
+  schedule: "0 0 * * 0"  # Weekly on Sunday at midnight
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: litmus-admin
+          containers:
+          - name: chaos-runner
+            image: litmuschaos/chaos-runner:latest
+            env:
+              - name: CHAOS_INTERVAL
+                value: "15"
+              - name: TOTAL_CHAOS_DURATION
+                value: "180"
+              - name: TARGET_CONTAINER
+                value: "application"
+            volumeMounts:
+              - name: experiments
+                mountPath: /experiments
+          volumes:
+            - name: experiments
+              configMap:
+                name: chaos-experiments
+          restartPolicy: Never

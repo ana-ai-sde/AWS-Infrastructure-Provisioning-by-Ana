@@ -1,0 +1,86 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: chaos-engineering
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.slack: chaos-alerts
+    notifications.argoproj.io/subscribe.pagerduty: prod-alerts
+spec:
+  generators:
+  - list:
+      elements:
+      - environment: prod
+        url: https://kubernetes.default.svc
+        values:
+          schedule: "0 22 * * 6"  # Saturday at 10 PM
+          duration: "300"
+          interval: "30"
+      - environment: staging
+        url: https://kubernetes.default.svc
+        values:
+          schedule: "0 22 * * 2"  # Tuesday at 10 PM
+          duration: "180"
+          interval: "20"
+      - environment: dev
+        url: https://kubernetes.default.svc
+        values:
+          schedule: "0 14 * * *"  # Daily at 2 PM
+          duration: "120"
+          interval: "15"
+  template:
+    metadata:
+      name: chaos-{{environment}}
+      namespace: argocd
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"  # Apply after monitoring and policies
+    spec:
+      project: default
+      source:
+        repoURL: {{values.gitRepository}}
+        targetRevision: HEAD
+        path: gitops/chaos/overlays/{{environment}}
+      destination:
+        server: {{url}}
+        namespace: litmus
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        retry:
+          limit: 2
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 1m
+      ignoreDifferences:
+      - group: litmuschaos.io
+        kind: ChaosResult
+        jsonPointers:
+        - /status
+      syncWindows:
+      - kind: allow
+        schedule: "0 * * * *"  # Every hour
+        duration: 15m
+        applications:
+        - chaos-{{environment}}
+      - kind: deny
+        schedule: "0 9 * * *"  # Block during business hours
+        duration: 10h
+        applications:
+        - chaos-prod
+        - chaos-staging
+      health:
+        healthChecks:
+        - group: apps
+          kind: Deployment
+          name: chaos-operator
+          namespace: litmus
+        - group: apps
+          kind: Deployment
+          name: chaos-exporter
+          namespace: litmus

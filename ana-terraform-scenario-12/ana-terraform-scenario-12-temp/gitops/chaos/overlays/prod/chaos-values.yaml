@@ -1,0 +1,15 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: production-chaos
+spec:
+  appinfo:
+    appns: 'default'
+    applabel: 'app=production'
+    appkind: 'deployment'
+  jobCleanUpPolicy: 'retain'
+  monitoring: true
+  annotationCheck: 'true'
+  engineState: 'active'
+  auxiliaryAppInfo: ''
+  chaosServiceAccount: litmus-admin

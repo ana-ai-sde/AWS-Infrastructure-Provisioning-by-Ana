@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-backup
+  namespace: argocd
+data:
+  template.backup-slack: |
+    message: |
+      *[BACKUP] Cluster Backup Status*
+      *Status:* {{if eq .phase "Completed"}}✅{{else}}❌{{end}} {{.phase}}
+      *Backup Name:* {{.name}}
+      *Namespace:* {{.namespace}}
+      *Started:* {{.startTime}}
+      *Completed:* {{.completionTime}}
+      {{if .errors}}
+      *Errors:*
+      {{range .errors}}
+        - {{.}}
+      {{end}}
+      {{end}}
+
+  template.backup-pagerduty: |
+    description: |
+      Cluster Backup {{.phase}}
+      Backup: {{.name}}
+      Started: {{.startTime}}
+      Completed: {{.completionTime}}
+    client: Velero Backup
+    severity: {{if eq .phase "Failed"}}critical{{else}}info{{end}}
+    class: backup
+    component: velero
+
+  trigger.backup-completed: |
+    - description: Backup completed
+      send:
+      - backup-slack
+      when: phase == 'Completed'
+
+  trigger.backup-failed: |
+    - description: Backup failed
+      send:
+      - backup-slack
+      - backup-pagerduty
+      when: phase == 'Failed'

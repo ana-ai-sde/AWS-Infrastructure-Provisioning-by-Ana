@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: system-components
+  namespace: ${namespace}
+spec:
+  generators:
+    - list:
+        elements:
+          - name: prometheus-stack
+            path: monitoring/prometheus
+          - name: opa-gatekeeper
+            path: policies/gatekeeper
+          - name: litmus-chaos
+            path: chaos/litmus
+  template:
+    metadata:
+      name: '{{name}}'
+      namespace: ${namespace}
+    spec:
+      project: default
+      source:
+        repoURL: ${repo_url}
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{name}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,49 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosExperiment
+metadata:
+  name: cpu-memory-hog
+  namespace: litmus
+spec:
+  definition:
+    scope: Namespaced
+    permissions:
+      - apiGroups:
+          - ""
+          - "apps"
+          - "batch"
+          - "litmuschaos.io"
+        resources:
+          - "deployments"
+          - "pods"
+          - "pods/log"
+          - "events"
+          - "chaosengines"
+          - "chaosexperiments"
+          - "chaosresults"
+        verbs:
+          - "create"
+          - "list"
+          - "get"
+          - "patch"
+          - "update"
+          - "delete"
+    image: "litmuschaos/go-runner:latest"
+    imagePullPolicy: Always
+    args:
+      - -c
+      - ./experiments -name cpu-memory-hog
+    command:
+      - /bin/bash
+    env:
+      - name: TOTAL_CHAOS_DURATION
+        value: '60'
+      - name: CPU_CORES
+        value: '1'
+      - name: MEMORY_CONSUMPTION
+        value: '500Mi'
+      - name: CONTAINER_RUNTIME
+        value: 'containerd'
+      - name: SOCKET_PATH
+        value: '/run/containerd/containerd.sock'
+    labels:
+      name: cpu-memory-hog
